@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. 
 */
-use std::{fmt::{Display,Debug}, error::Error, io::{BufRead}};
+use std::{fmt::{Display,Debug}, error::Error};
 
 impl Into<DataType> for bool {
     fn into(self) -> DataType {

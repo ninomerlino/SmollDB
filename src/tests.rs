@@ -21,11 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. 
 */
-use std::time::Instant;
-
 use crate::{db::SmollDB, util::DataType};
-use rand::{thread_rng, distributions::{Alphanumeric, DistString}};
-
 
 #[test]
 fn set_and_get() {

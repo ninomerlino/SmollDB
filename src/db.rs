@@ -118,10 +118,8 @@ impl SmollDB {
     fn decode(mut encoded_data: VecDeque<u8>) -> Result<HashMap<String, DataType>, SmollError> {
         let mut db_hashmap = HashMap::new();
         let mut key = String::default();
-        let mut size;
         while !encoded_data.is_empty() {
             key.clear();
-            size = 0;
             loop {
                 if let Some(byte) = encoded_data.pop_front() {
                     if byte == 0 {
@@ -268,7 +266,7 @@ impl SmollDB {
     pub fn backup(&self, file: impl AsRef<Path>) -> Result<(), SmollError> {
         let data = self.encode();
         let data = compress(&data, Format::Zlib, CompressionLevel::BestSpeed)
-            .map_err(|e| SmollError::CompressionError)?;
+            .map_err(|_| SmollError::CompressionError)?;
         self.save_file(file, &data)
     }
     ///Save `value` in the database with the specified `key`
