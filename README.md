@@ -7,7 +7,7 @@ This is a small in-memory key-value database, which can be easly backed up in a 
 
 ### **It ain't much but it's honest work**
 
-This database is nothing but an hashmap but it already comes with function to easly load and save the hashmap on file, it also compress it in a [Zlib](https://en.wikipedia.org/wiki/Zlib) compatible format
+This database is nothing but an hashmap, it already comes with function to easly load and save the hashmap on file though, so you don't have to implement it. It also compress it in a [Zlib](https://en.wikipedia.org/wiki/Zlib) compatible format
 
 ### **Inspired by Pickles**
 
