@@ -17,7 +17,7 @@ This crate was inspired by [pickleDB](https://github.com/patx/pickledb) and it w
 
 ## Some examples
 ### Basic use
-```Rust
+```rust
 let mut db = SmollDB::default();
 db.set("Nome", "Mario".to_string());
 db.set("Eta", 34_i16);
@@ -32,7 +32,7 @@ assert_eq!(DataType::FLOAT32(23.3_f32),*(db.get("Height").unwrap()));
 assert_eq!(DataType::BYTES(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),*(db.get("CF").unwrap()));
 ```
 ### Loading from file
-```Rust
+```rust
 let mut db = SmollDB::default();
 db.set("bool", false);
 db.set("int8", 8_i8);
