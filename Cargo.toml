@@ -14,4 +14,4 @@ description = "This is a small in-memory key-value database, which can be easly 
 yazi = "0.1.4"
 
 [dev-dependencies]
-serial_test = "*"
+serial_test = "0.9.0"
