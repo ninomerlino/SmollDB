@@ -66,7 +66,7 @@ impl From<Vec<u8>> for DataType {
 ///* `f64`
 ///* `String`
 ///* `Vec<u8>`
-#[derive(PartialEq)]
+#[derive(PartialEq,Debug)]
 pub enum DataType {
     BOOL(bool),
     INT8(i8),
@@ -93,22 +93,6 @@ impl DataType {
             DataType::FLOAT64(_) => 6,
             DataType::STRING(_) => 7,
             DataType::BYTES(_) => 8,
-        }
-    }
-}
-
-impl Debug for DataType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::BOOL(arg0) => f.debug_tuple("BOOL").field(arg0).finish(),
-            Self::INT8(arg0) => f.debug_tuple("INT8").field(arg0).finish(),
-            Self::INT16(arg0) => f.debug_tuple("INT16").field(arg0).finish(),
-            Self::INT32(arg0) => f.debug_tuple("INT32").field(arg0).finish(),
-            Self::INT64(arg0) => f.debug_tuple("INT64").field(arg0).finish(),
-            Self::FLOAT32(arg0) => f.debug_tuple("FLOAT32").field(arg0).finish(),
-            Self::FLOAT64(arg0) => f.debug_tuple("FLOAT64").field(arg0).finish(),
-            Self::STRING(arg0) => f.debug_tuple("STRING").field(arg0).finish(),
-            Self::BYTES(arg0) => f.debug_tuple("BYTES").field(arg0).finish(),
         }
     }
 }
