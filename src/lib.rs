@@ -54,5 +54,5 @@ mod error;
 pub use crate::{
     datatype::DataType,
     db::SmollDB,
-    error::{SmollError, SmollResult},
+    error::{Error, Result},
 };

@@ -1,36 +1,36 @@
 use std::{
-    error::Error,
+    error,
     fmt::{Debug, Display},
-    io,
+    io, result,
 };
 
 ///Error type for smolldb
 #[derive(Debug)]
-pub enum SmollError {
+pub enum Error {
     CompressionError(yazi::Error),
     DecodeError,
     FileError(io::Error),
 }
 
-impl From<io::Error> for SmollError {
+impl From<io::Error> for Error {
     fn from(value: io::Error) -> Self {
         Self::FileError(value)
     }
 }
 
-impl From<yazi::Error> for SmollError {
+impl From<yazi::Error> for Error {
     fn from(value: yazi::Error) -> Self {
         Self::CompressionError(value)
     }
 }
 
-impl Display for SmollError {
+impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(self, f)
     }
 }
 
-impl Error for SmollError {}
+impl error::Error for Error {}
 
 //Result for smolldb
-pub type SmollResult<T> = Result<T, SmollError>;
+pub type Result<T> = result::Result<T,Error>;

@@ -15,7 +15,7 @@ macro_rules! from_be_bytes {
                 .drain(0..size_of::<$type_name>())
                 .collect::<Vec<u8>>()
                 .try_into()
-                .map_err(|_| SmollError::DecodeError)?,
+                .map_err(|_| Error::DecodeError)?,
         )
     };
 }
@@ -27,14 +27,14 @@ pub struct SmollDB {
 }
 
 impl SmollDB {
-    fn save_file(&self, filename: impl AsRef<Path>, data: &[u8]) -> SmollResult<()> {
+    fn save_file(&self, filename: impl AsRef<Path>, data: &[u8]) -> Result<()> {
         let mut filename = filename.as_ref().to_owned();
         filename.set_extension("smoll");
         File::create(filename)?.write_all(data)?;
         Ok(())
     }
 
-    fn read_file(filename: impl AsRef<Path>) -> SmollResult<Vec<u8>> {
+    fn read_file(filename: impl AsRef<Path>) -> Result<Vec<u8>> {
         let mut filename = filename.as_ref().to_owned();
         filename.set_extension("smoll");
         let mut buffer: Vec<u8> = Vec::new();
@@ -69,15 +69,15 @@ impl SmollDB {
         encoded_data
     }
 
-    fn decode(mut encoded_data: VecDeque<u8>) -> SmollResult<HashMap<String, DataType>> {
+    fn decode(mut encoded_data: VecDeque<u8>) -> Result<HashMap<String, DataType>> {
         let mut db_hashmap = HashMap::new();
         while !encoded_data.is_empty() {
             let key_size = from_be_bytes!(usize, encoded_data);
             let key = String::from_utf8(encoded_data.drain(0..key_size).collect())
-                .map_err(|_| SmollError::DecodeError)?;
-            match encoded_data.pop_front().ok_or(SmollError::DecodeError)? {
+                .map_err(|_| Error::DecodeError)?;
+            match encoded_data.pop_front().ok_or(Error::DecodeError)? {
                 0 => {
-                    let data = encoded_data.pop_front().ok_or(SmollError::DecodeError)? != 0;
+                    let data = encoded_data.pop_front().ok_or(Error::DecodeError)? != 0;
                     db_hashmap.insert(key.clone(), DataType::BOOL(data));
                 }
                 1 => {
@@ -107,7 +107,7 @@ impl SmollDB {
                 7 => {
                     let data_size = dbg!(from_be_bytes!(usize, encoded_data));
                     let data = String::from_utf8(encoded_data.drain(0..data_size).collect())
-                        .map_err(|_| SmollError::DecodeError)?;
+                        .map_err(|_| Error::DecodeError)?;
                     db_hashmap.insert(key.clone(), DataType::STRING(data));
                 }
                 8 => {
@@ -116,7 +116,7 @@ impl SmollDB {
                     db_hashmap.insert(key.clone(), DataType::BYTES(data));
                 }
                 _ => {
-                    return Err(SmollError::DecodeError);
+                    return Err(Error::DecodeError);
                 }
             }
         }
@@ -134,7 +134,7 @@ impl SmollDB {
     ///let result = database.get("example").unwrap();
     ///assert_eq!(*result, DataType::STRING(data));
     /// ```
-    pub fn load(path: impl AsRef<Path>) -> SmollResult<Self> {
+    pub fn load(path: impl AsRef<Path>) -> Result<Self> {
         let encoded_data = Self::read_file(path)?;
         let (encoded_data, _) = decompress(&encoded_data, Format::Zlib)?;
         let data = Self::decode(encoded_data.into())?;
@@ -152,7 +152,7 @@ impl SmollDB {
     ///let result = database.get("example").unwrap();
     ///assert_eq!(*result, DataType::STRING(data));
     /// ```
-    pub fn backup(&self, file: impl AsRef<Path>) -> SmollResult<()> {
+    pub fn backup(&self, file: impl AsRef<Path>) -> Result<()> {
         let data = self.encode();
         let data = compress(&data, Format::Zlib, CompressionLevel::BestSpeed)?;
         self.save_file(file, &data)
