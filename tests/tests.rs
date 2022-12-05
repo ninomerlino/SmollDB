@@ -1,3 +1,5 @@
+use std::{fs::OpenOptions, io::Seek};
+
 use serial_test::serial;
 use smolldb::{DataType, SmollDB};
 
@@ -12,14 +14,14 @@ fn set_and_get() {
 
     assert_eq!(
         DataType::STRING("Mario".to_string()),
-        *(db.get("Nome").unwrap())
+        *(db.get(&"Nome").unwrap())
     );
-    assert_eq!(DataType::INT16(34_i16), *(db.get("Eta").unwrap()));
-    assert_eq!(DataType::BOOL(true), *(db.get("Stinky").unwrap()));
-    assert_eq!(DataType::FLOAT32(23.3_f32), *(db.get("Height").unwrap()));
+    assert_eq!(DataType::INT16(34_i16), *(db.get(&"Eta").unwrap()));
+    assert_eq!(DataType::BOOL(true), *(db.get(&"Stinky").unwrap()));
+    assert_eq!(DataType::FLOAT32(23.3_f32), *(db.get(&"Height").unwrap()));
     assert_eq!(
         DataType::BYTES(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
-        *(db.get("CF").unwrap())
+        *(db.get(&"CF").unwrap())
     );
 }
 
@@ -149,8 +151,9 @@ fn backup_and_load_complete() {
 fn example_db_default() {
     let mut database = SmollDB::default();
     let data = String::from("data");
-    database.set("example", data.clone());
-    let result = database.get("example").unwrap();
+    let key = String::from("example");
+    database.set(key.clone(), data.clone());
+    let result = database.get(&key).unwrap();
     assert_eq!(*result, DataType::STRING(data));
 }
 
@@ -159,9 +162,54 @@ fn example_db_default() {
 fn example_db_load() {
     let mut database = SmollDB::default();
     let data = String::from("data");
-    database.set("example", data.clone());
+    let key = String::from("example");
+    database.set(key.clone(), data.clone());
     database.backup("myfile").unwrap();
     let database = SmollDB::load("myfile").unwrap();
-    let result = database.get("example").unwrap();
+    let result = database.get(&key).unwrap();
     assert_eq!(*result, DataType::STRING(data));
+}
+
+#[test]
+fn example_db_remove_and_check() {
+    let mut database = SmollDB::default();
+    let data = String::from("data");
+    let key = String::from("example");
+    database.set(key.clone(), data.clone());
+    assert!(database.contains_key(&key));
+    database.remove(&key);
+    assert!(!database.contains_key(&key));
+}
+
+#[test]
+#[serial]
+fn example_db_load_from_stream() {
+    let mut database = SmollDB::default();
+    let mut stream = OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .open("myfile.smoll")
+        .unwrap();
+    let data = String::from("data");
+    let key = String::from("example");
+    database.set(key.clone(), data.clone());
+    database.backup_to_stream(&mut stream).unwrap();
+    stream.seek(std::io::SeekFrom::Start(0)).unwrap();
+    let database = SmollDB::load_from_stream(&mut stream).unwrap();
+    let result = database.get(&key).unwrap();
+    assert_eq!(*result, DataType::STRING(data));
+}
+
+#[test]
+fn example_db_iteration() {
+    let mut database = SmollDB::default();
+    let keys = vec!["k1", "k2", "k3", "k4"];
+    let values = vec![1, 2, 3, 4];
+    for (pos, key) in keys.clone().into_iter().enumerate() {
+        database.set(key.clone(), values[pos].clone());
+    }
+    for (k, v) in database {
+        assert_eq!(v, values[keys.iter().position(|&x| x == k).unwrap()].into())
+    }
 }

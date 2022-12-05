@@ -66,7 +66,7 @@ impl From<Vec<u8>> for DataType {
 ///* `f64`
 ///* `String`
 ///* `Vec<u8>`
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, Debug)]
 pub enum DataType {
     BOOL(bool),
     INT8(i8),

@@ -1,8 +1,9 @@
 use crate::*;
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{hash_map::IntoIter, HashMap, VecDeque},
     fs::File,
     io::{Read, Write},
+    iter::IntoIterator,
     mem::size_of,
     path::Path,
 };
@@ -57,8 +58,8 @@ impl SmollDB {
                 DataType::FLOAT32(value) => encoded_data.extend(value.to_be_bytes()),
                 DataType::FLOAT64(value) => encoded_data.extend(value.to_be_bytes()),
                 DataType::STRING(value) => {
-                    encoded_data.extend(dbg!(value.len().to_be_bytes()));
-                    encoded_data.extend(dbg!(value.as_bytes()));
+                    encoded_data.extend(value.len().to_be_bytes());
+                    encoded_data.extend(value.as_bytes());
                 }
                 DataType::BYTES(value) => {
                     encoded_data.extend(value.len().to_be_bytes());
@@ -105,7 +106,7 @@ impl SmollDB {
                     db_hashmap.insert(key.clone(), DataType::FLOAT64(data));
                 }
                 7 => {
-                    let data_size = dbg!(from_be_bytes!(usize, encoded_data));
+                    let data_size = from_be_bytes!(usize, encoded_data);
                     let data = String::from_utf8(encoded_data.drain(0..data_size).collect())
                         .map_err(|_| Error::DecodeError)?;
                     db_hashmap.insert(key.clone(), DataType::STRING(data));
@@ -128,10 +129,11 @@ impl SmollDB {
     ///# use smolldb::{DataType, SmollDB};
     ///let mut database = SmollDB::default();
     ///let data = String::from("data");
-    ///database.set("example",data.clone());
+    ///let key = String::from("example");
+    ///database.set(key.clone(), data.clone());
     ///database.backup("myfile").unwrap();
-    ///let database = SmollDB::load("mydatabase").unwrap();
-    ///let result = database.get("example").unwrap();
+    ///let database = SmollDB::load("myfile").unwrap();
+    ///let result = database.get(&key).unwrap();
     ///assert_eq!(*result, DataType::STRING(data));
     /// ```
     pub fn load(path: impl AsRef<Path>) -> Result<Self> {
@@ -146,16 +148,64 @@ impl SmollDB {
     ///# use smolldb::{DataType, SmollDB};
     ///let mut database = SmollDB::default();
     ///let data = String::from("data");
-    ///database.set("example",data.clone());
+    ///let key = String::from("example");
+    ///database.set(key.clone(), data.clone());
     ///database.backup("myfile").unwrap();
-    ///let database = SmollDB::load("mydatabase").unwrap();
-    ///let result = database.get("example").unwrap();
+    ///let database = SmollDB::load("myfile").unwrap();
+    ///let result = database.get(&key).unwrap();
     ///assert_eq!(*result, DataType::STRING(data));
     /// ```
-    pub fn backup(&self, file: impl AsRef<Path>) -> Result<()> {
+    pub fn backup(&self, path: impl AsRef<Path>) -> Result<()> {
         let data = self.encode();
         let data = compress(&data, Format::Zlib, CompressionLevel::BestSpeed)?;
-        self.save_file(file, &data)
+        self.save_file(path, &data)
+    }
+    ///Load database from generic stream
+    /// # Example
+    /// ```no_run
+    ///# use smolldb::{DataType, SmollDB};
+    ///# use std::fs::{OpenOptions};
+    ///# use std::io::{Seek};
+    ///let mut database = SmollDB::default();
+    ///let mut stream = OpenOptions::new().create(true).read(true).write(true).open("myfile.smoll").unwrap();
+    ///let data = String::from("data");
+    ///let key = String::from("example");
+    ///database.set(key.clone(), data.clone());
+    ///database.backup_to_stream(&mut stream).unwrap();
+    ///stream.seek(std::io::SeekFrom::Start(0)).unwrap();
+    ///let database = SmollDB::load_from_stream(&mut stream).unwrap();
+    ///let result = database.get(&key).unwrap();
+    ///assert_eq!(*result, DataType::STRING(data));
+    /// ```
+    pub fn load_from_stream(stream: &mut impl Read) -> Result<Self> {
+        let mut encoded_data = Vec::new();
+        stream.read_to_end(&mut encoded_data)?;
+        let (encoded_data, _) = decompress(&encoded_data, Format::Zlib)?;
+        let data = Self::decode(encoded_data.into())?;
+        Ok(Self { inner: data })
+    }
+    ///Backup database onto generic stream
+    /// # Example
+    /// ```no_run
+    ///# use smolldb::{DataType, SmollDB};
+    ///# use std::fs::{OpenOptions};
+    ///# use std::io::{Seek};
+    ///let mut database = SmollDB::default();
+    ///let mut stream = OpenOptions::new().create(true).read(true).write(true).open("myfile.smoll").unwrap();
+    ///let data = String::from("data");
+    ///let key = String::from("example");
+    ///database.set(key.clone(), data.clone());
+    ///database.backup_to_stream(&mut stream).unwrap();
+    ///stream.seek(std::io::SeekFrom::Start(0)).unwrap();
+    ///let database = SmollDB::load_from_stream(&mut stream).unwrap();
+    ///let result = database.get(&key).unwrap();
+    ///assert_eq!(*result, DataType::STRING(data));
+    /// ```
+    pub fn backup_to_stream(&self, stream: &mut impl Write) -> Result<()> {
+        let data = self.encode();
+        let data = compress(&data, Format::Zlib, CompressionLevel::BestSpeed)?;
+        stream.write_all(&data)?;
+        Ok(())
     }
     ///Save `value` in the database with the specified `key`
     /// # Example
@@ -163,8 +213,9 @@ impl SmollDB {
     ///# use smolldb::{DataType, SmollDB};
     ///let mut database = SmollDB::default();
     ///let data = String::from("data");
-    ///database.set("example",data.clone());
-    ///let result = database.get("example").unwrap();
+    ///let key = String::from("example");
+    ///database.set(key.clone(), data.clone());
+    ///let result = database.get(&key).unwrap();
     ///assert_eq!(*result, DataType::STRING(data));
     /// ```
     pub fn set(&mut self, key: impl ToString, value: impl Into<DataType>) -> Option<DataType> {
@@ -176,11 +227,52 @@ impl SmollDB {
     ///# use smolldb::{DataType, SmollDB};
     ///let mut database = SmollDB::default();
     ///let data = String::from("data");
-    ///database.set("example",data.clone());
-    ///let result = database.get("example").unwrap();
+    ///let key = String::from("example");
+    ///database.set(key.clone(), data.clone());
+    ///let result = database.get(&key).unwrap();
     ///assert_eq!(*result, DataType::STRING(data));
     /// ```
-    pub fn get(&self, key: impl ToString) -> Option<&DataType> {
+    pub fn get(&self, key: &impl ToString) -> Option<&DataType> {
         self.inner.get(&key.to_string())
+    }
+    ///Check if database contains the specified key
+    ///  # Example
+    /// ```no_run
+    ///# use smolldb::{DataType, SmollDB};
+    ///let mut database = SmollDB::default();
+    ///let data = String::from("data");
+    ///let key = String::from("example");
+    ///database.set(key.clone(), data.clone());
+    ///assert!(database.contains_key(&key));
+    ///database.remove(&key);
+    ///assert!(!database.contains_key(&key));
+    /// ```
+    pub fn contains_key(&self, key: &impl ToString) -> bool {
+        self.inner.contains_key(&key.to_string())
+    }
+    ///Remove element with the specified key from the database and returns it's value
+    ///  # Example
+    /// ```no_run
+    ///# use smolldb::{DataType, SmollDB};
+    ///let mut database = SmollDB::default();
+    ///let data = String::from("data");
+    ///let key = String::from("example");
+    ///database.set(key.clone(), data.clone());
+    ///assert!(database.contains_key(&key));
+    ///database.remove(&key);
+    ///assert!(!database.contains_key(&key));
+    /// ```
+    pub fn remove(&mut self, key: &impl ToString) -> Option<DataType> {
+        self.inner.remove(&key.to_string())
+    }
+}
+
+impl IntoIterator for SmollDB {
+    type Item = (String, DataType);
+
+    type IntoIter = IntoIter<String, DataType>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.into_iter()
     }
 }

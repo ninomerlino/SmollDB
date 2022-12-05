@@ -33,4 +33,4 @@ impl Display for Error {
 impl error::Error for Error {}
 
 //Result for smolldb
-pub type Result<T> = result::Result<T,Error>;
+pub type Result<T> = result::Result<T, Error>;

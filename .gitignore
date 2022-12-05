@@ -2,3 +2,4 @@
 /Cargo.lock
 *.py
 *.smoll
+prepublish.sh
