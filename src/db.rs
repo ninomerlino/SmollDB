@@ -9,6 +9,9 @@ use std::{
 };
 use yazi::{compress, decompress, CompressionLevel, Format};
 
+//TODO: use &[] instead of vecdequeque
+//TODO: get and [] functions
+
 macro_rules! from_be_bytes {
     ($type_name:ty, $data_buffer:ident) => {
         <$type_name>::from_be_bytes(
@@ -218,6 +221,7 @@ impl SmollDB {
     ///let result = database.get(&key).unwrap();
     ///assert_eq!(*result, DataType::STRING(data));
     /// ```
+    #[inline]
     pub fn set(&mut self, key: impl ToString, value: impl Into<DataType>) -> Option<DataType> {
         self.inner.insert(key.to_string(), value.into())
     }
@@ -232,6 +236,7 @@ impl SmollDB {
     ///let result = database.get(&key).unwrap();
     ///assert_eq!(*result, DataType::STRING(data));
     /// ```
+    #[inline]
     pub fn get(&self, key: &impl ToString) -> Option<&DataType> {
         self.inner.get(&key.to_string())
     }
@@ -264,6 +269,23 @@ impl SmollDB {
     /// ```
     pub fn remove(&mut self, key: &impl ToString) -> Option<DataType> {
         self.inner.remove(&key.to_string())
+    }
+    ///Similar to [`get`](crate::SmollDB::get) but converts the [`DataType`](crate::DataType) to the specified type if possible.
+    ///Returns `None` if the key is not contained in the database
+    ///Returns [`ConversionError`](crate::errors::Error::ConversionError) if the conversion fails
+    ///If T is a reference the reference lifetime is bound to the database lifetime
+    ///  # Example
+    /// ```no_run
+    /// # use smolldb::{DataType, SmollDB};
+    /// let mut database = SmollDB::default();
+    /// let data = String::from("data");
+    /// database.set(&"example", data.clone());
+    /// let extracted : &String = database.extract(&"example").unwrap().unwrap();
+    /// assert_eq!(extracted, &data);
+    /// ```
+    #[inline]
+    pub fn extract<'c,T: TryFrom<&'c DataType, Error = Error>>(&'c self, key: &impl ToString) -> Option<Result<T>>{
+        self.get(key).map(T::try_from)
     }
 }
 

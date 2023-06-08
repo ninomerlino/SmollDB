@@ -6,12 +6,15 @@ license = "MIT"
 rust-version = "1.65.0"
 readme = "README.md"
 repository = "https://github.com/ninomerlino/SmollDB/"
-keywords = ["small", "key-value","database"]
+keywords = ["small", "key-value","database","smolldb"]
 description = "This is a small in-memory key-value database, which can be easly backed up in a file and later loaded from it"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+#TODO: Add datetime feature
+#TODO: Add decimal feature
 [dependencies]
-yazi = "0.1.4"
+yazi = "0.1.6"
 
 [dev-dependencies]
 serial_test = "0.9.0"
+
