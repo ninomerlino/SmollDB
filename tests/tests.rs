@@ -243,7 +243,7 @@ fn datetype_try_from_conversion() {
 }
 
 #[test]
-fn text_db_extract(){
+fn test_db_extract(){
     let mut database = SmollDB::default();
     let bool_data = true;
     let int8_data = 8_i8;
@@ -286,7 +286,8 @@ fn text_db_extract(){
     assert_eq!(bytes_data, *bytes_data_extracted);
 }
 
-fn text_db_extract_clone(){
+#[test]
+fn test_db_extract_clone(){
     let mut database = SmollDB::default();
     let bool_data = true;
     let int8_data = 8_i8;
