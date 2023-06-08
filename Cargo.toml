@@ -15,4 +15,10 @@ yazi = "0.1.6"
 
 [dev-dependencies]
 serial_test = "2.0.0"
+criterion = { version = "0.4", features = ["html_reports"] }
+
+[[bench]]
+name = "chonky"
+harness = false
+
 
