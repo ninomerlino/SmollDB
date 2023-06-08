@@ -9,9 +9,6 @@ use std::{
 };
 use yazi::{compress, decompress, CompressionLevel, Format};
 
-//TODO: use &[] instead of vecdequeque
-//TODO: get and [] functions
-
 macro_rules! from_be_bytes {
     ($type_name:ty, $data_buffer:ident) => {
         <$type_name>::from_be_bytes(
@@ -271,8 +268,8 @@ impl SmollDB {
         self.inner.remove(&key.to_string())
     }
     ///Similar to [`get`](crate::SmollDB::get) but converts the [`DataType`](crate::DataType) to the specified type if possible.
-    ///Returns `None` if the key is not contained in the database
-    ///Returns [`ConversionError`](crate::errors::Error::ConversionError) if the conversion fails
+    ///Returns `None` if the key is not contained in the database.
+    ///Returns [`ConversionError`](crate::errors::Error::ConversionError) if the conversion fails.
     ///If T is a reference the reference lifetime is bound to the database lifetime
     ///  # Example
     /// ```no_run
